@@ -1,10 +1,9 @@
-# helloworld
+# astrbot_plugin_telegram
 
-AstrBot 插件模板
+一个让 Astrbot 支持 Telegram 平台的插件。
 
-A template plugin for AstrBot plugin feature
+> 欢迎任何贡献 ❤️
 
-# 支持
+## 使用
 
-[帮助文档](https://astrbot.soulter.top/center/docs/%E5%BC%80%E5%8F%91/%E6%8F%92%E4%BB%B6%E5%BC%80%E5%8F%91/
-)
+安装好插件后，在 Astrbot 可视化面板中进行配置。
