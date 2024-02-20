@@ -18,9 +18,6 @@ import asyncio
 import threading
 
 class Main:
-    """
-    初始化函数, 可以选择直接pass
-    """
     def __init__(self) -> None:
         self.loop = asyncio.new_event_loop()
         logging.basicConfig(
@@ -41,8 +38,15 @@ class Main:
 
     async def message_handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = NakuruGuildMessage()
+
+        plain_text = update.message.text
+        # check if it start with mention
+        bot_username = context.bot.username
+        if f"@{bot_username}" not in plain_text:
+            return
+
         message.user_id = update.effective_chat.id
-        message.message = [Plain(update.message.text),]
+        message.message = [Plain(plain_text),]
         result = await message_handler(
             message = message,
             platform = "telegram",
