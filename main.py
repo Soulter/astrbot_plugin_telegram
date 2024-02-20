@@ -1,9 +1,13 @@
+import logging
+import os
+import asyncio
+import threading
+import colorlog
+
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 from nakuru.entities.components import *
-from nakuru import (
-    GroupMessage,
-    FriendMessage
-)
-from botpy.message import Message, DirectMessage
+
 try:
     from util.plugin_dev.api.v1.config import *
     from util.plugin_dev.api.v1.message import AstrMessageEvent, MessageResult, message_handler, CommandResult
@@ -11,19 +15,19 @@ try:
 except ImportError:
     raise Exception("astrbot_plugin_telegram: 依赖导入失败。原因：请升级 AstrBot 到最新版本。")
 from model.platform._nakuru_translation_layer import NakuruGuildMessage
-import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
-import asyncio
-import threading
+
+log_colors_config = {
+    'DEBUG': 'white',  # cyan white
+    'INFO': 'green',
+    'WARNING': 'yellow',
+    'ERROR': 'red',
+    'CRITICAL': 'cyan',
+}
 
 class Main:
     def __init__(self) -> None:
         self.loop = asyncio.new_event_loop()
-        logging.basicConfig(
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            level=logging.ERROR
-        )
+        self.init_log()
         self.NAMESPACE = "astrbot_plugin_telegram"
         put_config(self.NAMESPACE, "是否启用 Telegram 平台", "telegram_enable", False, "是否启用 Telegram 平台")
         put_config(self.NAMESPACE, "telegram_token", "telegram_token", "", "Telegram Bot 的 Token")
@@ -42,9 +46,9 @@ class Main:
         plain_text = update.message.text
         # check if it start with mention
         bot_username = context.bot.username
+        logging.info(f"telegram/{update.effective_chat.id} -> {plain_text}")
         if f"@{bot_username}" not in plain_text:
             return
-
         message.user_id = update.effective_chat.id
         message.message = [Plain(plain_text),]
         result = await message_handler(
@@ -56,6 +60,7 @@ class Main:
         plain_text = ""
         image_path = None
         if isinstance(result.result_message, str):
+            logging.info(f"telegram/{update.effective_chat.id} <- {result.result_message}")
             await context.bot.send_message(chat_id=update.effective_chat.id, text=result.result_message)
             return
         for i in result.result_message:
@@ -78,6 +83,26 @@ class Main:
         self.application.add_handler(start_handler)
         self.application.add_handler(message_handler)
         self.application.run_polling(stop_signals=None)
+
+    def init_log():
+        # logging config
+        logging_level = logging.INFO
+        if 'DEBUG' in os.environ and os.environ['DEBUG'] == 'true':
+            logging_level = logging.DEBUG
+        
+        terminal_out = logging.StreamHandler()
+        
+        terminal_out.setFormatter(colorlog.ColoredFormatter(
+            "%(log_color)s[%(asctime)s] [%(levelname)s] %(message)s",
+            datefmt="%m-%d %H:%M:%S",
+            log_colors=log_colors_config,
+        ))
+        
+        for t in logging.getLogger().handlers:
+            logging.getLogger().removeHandler(t)
+        
+        logging.getLogger().addHandler(terminal_out)
+        logging.getLogger().setLevel(logging_level)
 
     def run(self, ame: AstrMessageEvent):
         return CommandResult(
