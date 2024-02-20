@@ -47,8 +47,6 @@ class Main:
         # check if it start with mention
         bot_username = context.bot.username
         logging.info(f"telegram/{update.effective_chat.id} -> {plain_text}")
-        if f"@{bot_username}" not in plain_text:
-            return
         message.user_id = update.effective_chat.id
         message.message = [Plain(plain_text),]
         result = await message_handler(
