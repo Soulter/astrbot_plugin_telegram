@@ -84,7 +84,7 @@ class Main:
         self.application.add_handler(message_handler)
         self.application.run_polling(stop_signals=None)
 
-    def init_log():
+    def init_log(self):
         # logging config
         logging_level = logging.INFO
         if 'DEBUG' in os.environ and os.environ['DEBUG'] == 'true':
