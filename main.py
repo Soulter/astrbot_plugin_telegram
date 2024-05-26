@@ -10,11 +10,10 @@ from nakuru.entities.components import *
 
 try:
     from util.plugin_dev.api.v1.config import *
-    from util.plugin_dev.api.v1.message import AstrMessageEvent, MessageResult, message_handler, CommandResult
+    from util.plugin_dev.api.v1.message import AstrMessageEvent, MessageResult, message_handler, CommandResult, AstrBotMessage
     from util.plugin_dev.api.v1.bot import GlobalObject
 except ImportError:
     raise Exception("astrbot_plugin_telegram: 依赖导入失败。原因：请升级 AstrBot 到最新版本。")
-from model.platform._nakuru_translation_layer import NakuruGuildMessage
 
 log_colors_config = {
     'DEBUG': 'white',  # cyan white
@@ -41,7 +40,7 @@ class Main:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=self.start_message)
 
     async def message_handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        message = NakuruGuildMessage()
+        message = AstrBotMessage()
 
         plain_text = update.message.text
         # check if it start with mention
