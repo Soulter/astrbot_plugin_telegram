@@ -1,0 +1,7 @@
+plugin_type: "platform"
+name: "astrbot_plugin_telegram"
+desc: "接入 Telegram 的插件"
+help: "帮助信息查看：https://github.com/Soulter/astrbot_plugin_telegram"
+version: "v1.0.1"
+author: "Soulter"
+repo: "https://github.com/Soulter/astrbot_plugin_telegram"
