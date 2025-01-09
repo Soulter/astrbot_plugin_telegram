@@ -19,7 +19,11 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-@register_platform_adapter("telegram", "telegram 适配器")
+@register_platform_adapter("telegram", "telegram 适配器", default_config_tmpl={
+    "telegram_token": "your_token",
+    "start_message": "Hello, I'm AstrBot!",
+    "提示": "由于 Telegram 无法在中国大陆访问，如果你的网络环境为中国大陆，记得在 `其他配置` 处设置代理！"
+})
 class TelegramPlatformAdapter(Platform):
 
     def __init__(self, platform_config: dict, platform_settings: dict, event_queue: asyncio.Queue) -> None:
@@ -50,6 +54,7 @@ class TelegramPlatformAdapter(Platform):
         await self.application.start()
         queue = self.application.updater.start_polling()
         self.client = self.application.bot
+        print("Telegram Platform Adapter is running.")
         await queue
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
