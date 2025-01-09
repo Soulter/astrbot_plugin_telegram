@@ -1,3 +1,4 @@
+import telegram # noqa: F401
 from astrbot.api.all import Context
 
 
