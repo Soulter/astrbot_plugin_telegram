@@ -1,6 +1,6 @@
 from astrbot.api.event import AstrMessageEvent, MessageChain
-from astrbot.api.platform import AstrBotMessage, PlatformMetadata
-from astrbot.api.message_components import Plain, Image
+from astrbot.api.platform import AstrBotMessage, PlatformMetadata, MessageType
+from astrbot.api.message_components import Plain, Image, Reply, At
 from telegram.ext import ExtBot
 
 class TelegramPlatformEvent(AstrMessageEvent):
@@ -11,18 +11,40 @@ class TelegramPlatformEvent(AstrMessageEvent):
     @staticmethod
     async def send_with_client(client: ExtBot, message: MessageChain, user_name: str):
         image_path = None
+        
+        has_reply = False
+        reply_message_id = None
+        at_user_id = None
         for i in message.chain:
+            if isinstance(i, Reply):
+                has_reply = True
+                reply_message_id = i.id
+            if isinstance(i, At):
+                at_user_id = i.name
+        
+        at_flag = False
+        for i in message.chain:
+            payload = {
+                "chat_id": user_name,
+            }
+            if has_reply:
+                payload["reply_to_message_id"] = reply_message_id
+            
             if isinstance(i, Plain):
-                await client.send_message(chat_id=user_name, text=i.text)
+                if at_user_id and not at_flag:
+                    i.text = f"@{at_user_id} " + i.text
+                    at_flag = True
+                await client.send_message(text=i.text, **payload)
             elif isinstance(i, Image):
                 if i.path:
                     image_path = i.path
                 else:
                     image_path = i.file
-                await client.send_photo(chat_id=user_name, photo=image_path)
-
-                
+                await client.send_photo(photo=image_path, **payload)
         
     async def send(self, message: MessageChain):
-        await self.send_with_client(self.client, message, self.get_sender_id())
+        if self.get_message_type() == MessageType.GROUP_MESSAGE:
+            await self.send_with_client(self.client, message, self.message_obj.group_id)
+        else:
+            await self.send_with_client(self.client, message, self.get_sender_id())
         await super().send(message)

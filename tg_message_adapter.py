@@ -4,11 +4,11 @@ import asyncio
 
 from astrbot.api.platform import Platform, AstrBotMessage, MessageMember, PlatformMetadata, MessageType
 from astrbot.api.event import MessageChain
-from astrbot.api.message_components import *
+from astrbot.api.message_components import Plain, Image, Record
 from astrbot.core.platform.astr_message_event import MessageSesion
 from astrbot.api.platform import register_platform_adapter
 
-from telegram import Update
+from telegram import Update, File
 from telegram.ext import ApplicationBuilder, ContextTypes, filters
 from telegram.constants import ChatType
 from telegram.ext import MessageHandler as TelegramMessageHandler
@@ -48,7 +48,10 @@ class TelegramPlatformAdapter(Platform):
     @override
     async def run(self):
         self.application = ApplicationBuilder().token(self.config['telegram_token']).build()
-        message_handler = TelegramMessageHandler(filters.TEXT, self.convert_message)
+        message_handler = TelegramMessageHandler(
+            filters=None,
+            callback=self.convert_message
+        )
         self.application.add_handler(message_handler)
         await self.application.initialize()
         await self.application.start()
@@ -62,24 +65,28 @@ class TelegramPlatformAdapter(Platform):
 
     async def convert_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> AstrBotMessage:
         message = AstrBotMessage()
-        
         # 获得是群聊还是私聊
         if update.effective_chat.type == ChatType.PRIVATE:
             message.type = MessageType.FRIEND_MESSAGE
         else:
             message.type = MessageType.GROUP_MESSAGE
-        
-        
-        plain_text = update.message.text
+            message.group_id = update.effective_chat.id
         message.message_id = str(update.message.message_id)
-        message.message_str = plain_text
         message.session_id = str(update.effective_chat.id)
-        message.sender = MessageMember(str(update.effective_chat.id), update.effective_chat.effective_name)
-        message.message = [Plain(plain_text),]
-        message.message_str = plain_text
+        message.sender = MessageMember(str(update.effective_user.id), update.effective_user.username)
         message.self_id = str(context.bot.id)
         message.raw_message = update
-
+        message.message_str = ""
+        
+        if update.message.text:
+            plain_text = update.message.text
+            message.message = [Plain(plain_text),]
+            message.message_str = plain_text
+            
+        elif update.message.voice:
+            file = await update.message.voice.get_file()
+            message.message = [Record(file=file.file_path, url=file.file_path),]
+            
         
         await self.handle_msg(message)
     
