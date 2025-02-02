@@ -7,6 +7,7 @@ from astrbot.api.event import MessageChain
 from astrbot.api.message_components import Plain, Image, Record
 from astrbot.core.platform.astr_message_event import MessageSesion
 from astrbot.api.platform import register_platform_adapter
+from astrbot.core import logger
 
 from telegram import Update, File
 from telegram.ext import ApplicationBuilder, ContextTypes, filters
@@ -49,7 +50,7 @@ class TelegramPlatformAdapter(Platform):
     async def run(self):
         self.application = ApplicationBuilder().token(self.config['telegram_token']).build()
         message_handler = TelegramMessageHandler(
-            filters=None,
+            filters=filters.ALL,  # 接收所有类型的消息
             callback=self.convert_message
         )
         self.application.add_handler(message_handler)
@@ -77,19 +78,24 @@ class TelegramPlatformAdapter(Platform):
         message.self_id = str(context.bot.id)
         message.raw_message = update
         message.message_str = ""
-        
+
+        # 只处理文本和语音消息
         if update.message.text:
             plain_text = update.message.text
             message.message = [Plain(plain_text),]
             message.message_str = plain_text
-            
+            await self.handle_msg(message)
         elif update.message.voice:
             file = await update.message.voice.get_file()
             message.message = [Record(file=file.file_path, url=file.file_path),]
-            
-        
-        await self.handle_msg(message)
-    
+            message.message_str = f"[语音消息: {file.file_path}]"  # 保留 message_str
+            await self.handle_msg(message)
+        else:
+            message.message = []  # 对于不支持的消息类型，将 message 列表设置为空
+            logger.info(f"收到不支持的消息类型，来自：{message.sender.user_id if message.sender else '未知'}，已忽略")
+            # 可选：发送提示消息
+            # await TelegramPlatformEvent.send_with_client(self.client, MessageChain().message("只支持文本和语音消息"), message.session_id)
+
     async def handle_msg(self, message: AstrBotMessage):
         message_event = TelegramPlatformEvent(
             message_str=message.message_str,
