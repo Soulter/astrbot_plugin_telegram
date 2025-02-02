@@ -22,7 +22,8 @@ else:
 @register_platform_adapter("telegram", "telegram 适配器", default_config_tmpl={
     "telegram_token": "your_token",
     "start_message": "Hello, I'm AstrBot!",
-    "提示": "由于 Telegram 无法在中国大陆访问，如果你的网络环境为中国大陆，记得在 `其他配置` 处设置代理！"
+    "telegram_api_base_url": "https://api.telegram.org/bot",
+    "提示": "由于 Telegram 无法在中国大陆 / Iran 访问，如果你的网络环境为中国大陆 / Iran，记得在 `其他配置` 处设置代理！"
 })
 class TelegramPlatformAdapter(Platform):
 
@@ -47,7 +48,11 @@ class TelegramPlatformAdapter(Platform):
 
     @override
     async def run(self):
-        self.application = ApplicationBuilder().token(self.config['telegram_token']).build()
+        base_url = self.config.get("telegram_api_base_url", "https://api.telegram.org/bot")
+        if not base_url:
+            base_url = "https://api.telegram.org/bot"
+        
+        self.application = ApplicationBuilder().token(self.config['telegram_token']).base_url(base_url).build()
         message_handler = TelegramMessageHandler(
             filters=None,
             callback=self.convert_message
