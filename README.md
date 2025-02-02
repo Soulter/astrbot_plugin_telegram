@@ -12,3 +12,4 @@
 
 > [!TIP]
 > 当更新这个插件后，请在 配置页 直接点击保存配置以全量重启，否则不会生效
+> when updated this plugin, please directly click the save button in the Config Page to fully restart the AstrBot, or the update may not make effect
