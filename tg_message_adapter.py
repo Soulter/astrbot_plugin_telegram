@@ -77,6 +77,7 @@ class TelegramPlatformAdapter(Platform):
         message.self_id = str(context.bot.id)
         message.raw_message = update
         message.message_str = ""
+        message.message = []
         
         if update.message.text:
             plain_text = update.message.text
