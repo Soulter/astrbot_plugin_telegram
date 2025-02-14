@@ -13,6 +13,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, filters
 from telegram.constants import ChatType
 from telegram.ext import MessageHandler as TelegramMessageHandler
 from .tg_message_event import TelegramPlatformEvent
+from astrbot.api import logger
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -22,6 +23,7 @@ else:
 @register_platform_adapter("telegram", "telegram 适配器", default_config_tmpl={
     "telegram_token": "your_token",
     "start_message": "Hello, I'm AstrBot!",
+    "telegram_api_base_url": "https://api.telegram.org/bot", 
     "提示": "由于 Telegram 无法在中国大陆访问，如果你的网络环境为中国大陆，记得在 `其他配置` 处设置代理！"
 })
 class TelegramPlatformAdapter(Platform):
@@ -47,9 +49,13 @@ class TelegramPlatformAdapter(Platform):
 
     @override
     async def run(self):
-        self.application = ApplicationBuilder().token(self.config['telegram_token']).build()
+        base_url = self.config.get("telegram_api_base_url", "https://api.telegram.org/bot")
+        if not base_url:
+            base_url = "https://api.telegram.org/bot"
+        
+        self.application = ApplicationBuilder().token(self.config['telegram_token']).base_url(base_url).build()
         message_handler = TelegramMessageHandler(
-            filters=None,
+            filters=filters.ALL,  # receive all messages
             callback=self.convert_message
         )
         self.application.add_handler(message_handler)
@@ -57,7 +63,8 @@ class TelegramPlatformAdapter(Platform):
         await self.application.start()
         queue = self.application.updater.start_polling()
         self.client = self.application.bot
-        print("Telegram Platform Adapter is running.")
+        logger.info("Telegram Platform Adapter is running.")
+
         await queue
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -89,8 +96,9 @@ class TelegramPlatformAdapter(Platform):
             message.message = [Record(file=file.file_path, url=file.file_path),]
             
         elif update.message.photo:
-            file = await update.message.photo[-1].get_file()
-            message.message = [Image(file=file.file_path, url=file.file_path),]
+            for photo in update.message.photo:
+                file = await photo.get_file()
+                message.message.append(Image(file=file.file_path, url=file.file_path))
             
         elif update.message.document:
             file = await update.message.document.get_file()
