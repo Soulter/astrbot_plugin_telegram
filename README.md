@@ -1,3 +1,8 @@
+> [!TIP]
+> v3.4.32 版本后，AstrBot 将自带本插件实现，无需再安装，本插件将停止更新。
+
+
+
 # astrbot_plugin_telegram
 
 一个让 Astrbot 支持 Telegram 平台的插件。
